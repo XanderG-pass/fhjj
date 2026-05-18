@@ -1,0 +1,374 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+html {
+  min-height: 100%;
+  background: #fff;
+}
+
+body {
+  min-height: 100vh;
+  background: #fff;
+  color: #111;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+body, button {
+  font: 1rem/1.5 "-apple-system", BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+body.unlocked {
+  background: #fff;
+}
+
+.scene {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 24px;
+  position: relative;
+  scroll-snap-align: start;
+  transition: opacity 1.4s ease, filter 1.4s ease;
+}
+
+.scene--unlock {
+  padding-top: 20vh;
+  padding-bottom: 20vh;
+  z-index: 1;
+}
+
+body.ready-dark .scene {
+  filter: brightness(0.92);
+}
+
+body.dimmed .scene {
+  opacity: 0.08;
+}
+
+body {
+  scroll-snap-type: y mandatory;
+}
+
+.scene--unlock::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 1.8s ease;
+  z-index: -2;
+}
+
+body.unlocked .scene--unlock::before {
+  background: url("images/forest.jpg") center center / cover no-repeat;
+  opacity: 1;
+}
+
+body.unlocked .scene--unlock::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(255,255,255,0.72), rgba(255,255,255,0.24) 40%, rgba(255,255,255,0) 75%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.unlock-inner {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 28px;
+  place-items: center;
+  text-align: center;
+}
+
+.leaf-frame {
+  position: relative;
+  width: 172px;
+  height: 172px;
+  border-radius: 42px;
+  background: rgba(0, 0, 0, 0.03);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.08);
+}
+
+.leaf {
+  font-size: clamp(5rem, 18vw, 8rem);
+  filter: grayscale(100%);
+  transition: transform 1.6s ease, filter 1.6s ease;
+  will-change: transform, filter;
+  animation: breathe 6s ease-in-out infinite;
+}
+
+.lock {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 44px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  transition: opacity 1.4s ease, transform 1.4s ease;
+}
+
+.lock-shackle,
+.lock-body {
+  position: absolute;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 17, 17, 0.8);
+}
+
+.lock-shackle {
+  width: 26px;
+  height: 24px;
+  top: 0;
+  border-bottom: none;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  transform: translateY(2px);
+}
+
+.lock-body {
+  width: 34px;
+  height: 28px;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+}
+
+.lock-hidden {
+  opacity: 0;
+  transform: translateY(24px) scale(0.9);
+}
+
+.hint,
+.scroll-hint,
+.earpods-text,
+.fragment p,
+.final-copy {
+  letter-spacing: 0.08em;
+}
+
+.hint {
+  color: rgba(17, 17, 17, 0.56);
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.quote {
+  max-width: 640px;
+  color: #111;
+  font-size: clamp(1.25rem, 3vw, 2.2rem);
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 1.8s ease 0.2s, transform 1.8s ease 0.2s;
+}
+
+.quote.visible,
+body.unlocked .quote {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-hint {
+  margin-top: 48px;
+  color: rgba(17, 17, 17, 0.42);
+  font-size: 0.88rem;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 1.4s ease 0.3s, transform 1.4s ease 0.3s;
+}
+
+body.unlocked .scroll-hint,
+.scroll-hint.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.memory-grid {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 120px;
+  padding: 20vh 0;
+}
+
+.fragment {
+  position: relative;
+  min-height: 65vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 0 24px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 1.4s ease, transform 1.4s ease;
+}
+
+.fragment.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fragment p {
+  font-size: clamp(1.1rem, 2.3vw, 1.5rem);
+  max-width: 560px;
+  line-height: 1.6;
+  color: #111;
+}
+
+.fragment::after {
+  content: attr(data-symbol);
+  position: absolute;
+  top: 12%;
+  right: 8%;
+  color: rgba(17, 17, 17, 0.12);
+  font-size: 2.2rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.scene--earpods {
+  padding-top: 24vh;
+  padding-bottom: 20vh;
+}
+
+.earpods-area {
+  display: grid;
+  gap: 36px;
+  place-items: center;
+  text-align: center;
+}
+
+.earpods {
+  display: flex;
+  gap: 32px;
+  align-items: flex-end;
+  cursor: pointer;
+  transition: transform 1.4s ease;
+}
+
+.earpods.active {
+  transform: translateX(-8px) scale(0.98);
+}
+
+.pod {
+  width: 46px;
+  height: 82px;
+  border-radius: 28px 28px 18px 18px;
+  background: #f5f5f5;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.pod::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 18px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.45));
+}
+
+.pod--left {
+  transform-origin: center bottom;
+  transition: transform 1.4s ease;
+}
+
+.pod--right {
+  transform-origin: center bottom;
+  transition: transform 1.4s ease;
+}
+
+.earpods.active .pod--left {
+  transform: translateX(-32px) rotate(-6deg);
+}
+
+.earpods.active .pod--right {
+  transform: translateX(32px) rotate(6deg);
+}
+
+.earpods-text {
+  max-width: 560px;
+  color: rgba(17, 17, 17, 0.76);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+  display: grid;
+  place-items: center;
+  z-index: 10;
+}
+
+.overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.final-copy {
+  color: #fff;
+  opacity: 0;
+  transform: translateY(20px);
+  max-width: 640px;
+  text-align: center;
+  font-size: clamp(0.85rem, 2vw, 1.1rem);
+  line-height: 1.8;
+  letter-spacing: 0.18em;
+  transition: opacity 2.4s ease 1s, transform 2.4s ease 1s;
+}
+
+.overlay.active .final-copy {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (max-width: 640px) {
+  .scene {
+    padding: 0 20px;
+  }
+
+  .memory-grid {
+    gap: 88px;
+  }
+
+  .fragment::after {
+    font-size: 1.8rem;
+    top: 8%;
+    right: 6%;
+  }
+}
+
+
+

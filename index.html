@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>FHJJ | 枫海蒹葭</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div class="scene scene--unlock" id="sceneUnlock">
+    <div class="unlock-inner">
+      <div class="leaf-frame">
+        <div class="leaf" id="leaf">🍁</div>
+        <div class="lock" id="lock">
+          <span class="lock-shackle"></span>
+          <span class="lock-body"></span>
+        </div>
+      </div>
+      <p class="hint">轻触解封</p>
+      <h1 class="quote" id="quote">过往温柔，已经被时间上锁。</h1>
+    </div>
+    <p class="scroll-hint" id="scrollHint">向下滑动，记忆缓缓展开</p>
+  </div>
+
+  <div class="scene scene--memory" id="sceneMemory">
+    <div class="memory-grid">
+      <section class="fragment" data-symbol="海浪">
+        <p>海面上，有光线像手指轻轻划过。</p>
+      </section>
+      <section class="fragment" data-symbol="雨">
+        <p>雨点落在伞面上，是某年秋天的告白。</p>
+      </section>
+      <section class="fragment" data-symbol="枫叶">
+        <p>枫叶轻落，像藏在口袋里的信。</p>
+      </section>
+      <section class="fragment" data-symbol="出租车">
+        <p>夜色里，有一辆白色出租车慢慢驶过。</p>
+      </section>
+      <section class="fragment" data-symbol="耳机">
+        <p>风里带着耳机线的余温，低声说着你没有听见的话。</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="scene scene--earpods" id="sceneEarPods">
+    <div class="earpods-area">
+      <div class="earpods" id="earPods">
+        <div class="pod pod--left"></div>
+        <div class="pod pod--right"></div>
+      </div>
+      <p class="earpods-text">有些话，只能说给一个人听。</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="final-copy" id="finalCopy">其实那天，我听见你喊我了。</div>
+  </div>
+
+  <audio id="bgm" src="music/bgm.mp3" preload="auto"></audio>
+  <audio id="voice" src="music/voice.mp3" preload="auto"></audio>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
