@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="枫海蒹葭" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="一个被封存在NFC里的记忆入口" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./images/ap4m.jpg" />
+  <link rel="preload" href="./images/wall.jpg" as="image" />
+  <link rel="preload" href="./music/bgm.m4a" as="audio" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>枫海蒹葭</title>
+</head>
+
+<body>
+  <div id="loader" class="loader" aria-live="polite">
+    <div class="loader-panel">
+      <p>正在读取江云雁的iCloud</p>
+      <span class="apple-spinner" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <main id="app" class="app" aria-label="枫海蒹葭记忆入口">
+    <section id="stage1" class="stage stage-1" data-stage="1">
+      <div class="wallpaper" aria-hidden="true"></div>
+      <div id="verifyCard" class="glass-card verify-card">
+        <div id="quizPanel" class="quiz-panel"></div>
+        <div id="rejectText" class="reject-text">请回吧，这里不欢迎犯罪嫌疑人。</div>
+        <button id="homeButton" class="glass-button home-button" type="button">返回首页</button>
+      </div>
+      <div id="nameCard" class="glass-card name-card" aria-hidden="true">
+        <label for="nicknameInput">留下你的名字。</label>
+        <input id="nicknameInput" type="text" maxlength="18" autocomplete="nickname" inputmode="text" />
+        <button id="nicknameSubmit" class="glass-button dark" type="button">进入</button>
+      </div>
+    </section>
+
+    <section id="stage2" class="stage stage-2" data-stage="2">
+      <div id="leafLock" class="leaf-lock">
+        <img id="blackLeaf" class="memory-object black-leaf" alt="" draggable="false" />
+        <img id="blackLock" class="memory-object black-lock" alt="" draggable="false" />
+      </div>
+      <button id="unlockHint" class="quiet-hint" type="button">轻触解锁</button>
+      <button id="beginMemory" class="begin-memory" type="button">开始回忆</button>
+    </section>
+
+    <section id="stage3" class="stage stage-3" data-stage="3">
+      <div id="scrollWorld" class="scroll-world">
+        <img id="picA" class="flash-image" alt="" draggable="false" />
+        <img id="picB" class="flash-image" alt="" draggable="false" />
+        <img id="memoImage" class="memo-image" alt="" draggable="false" />
+        <div id="memoText" class="memo-text"></div>
+      </div>
+    </section>
+
+    <section id="stage4" class="stage stage-4" data-stage="4">
+      <button id="casePickup" class="product-button case-pickup" type="button">
+        <img id="caseImage" alt="AirPods4充电仓" draggable="false" />
+      </button>
+      <div id="podsPair" class="pods-pair" aria-hidden="true">
+        <img id="podLeft" alt="" draggable="false" />
+        <img id="podRight" alt="" draggable="false" />
+      </div>
+      <button id="wearPods" class="quiet-hint product-hint" type="button">点击拾取</button>
+    </section>
+
+    <section id="stage5" class="stage stage-5" data-stage="5">
+      <div id="endingCopy" class="ending-copy">
+        <p>感谢欣赏《枫海蒹葭》DLC</p>
+        <p>我们下个宇宙帧再见</p>
+      </div>
+      <button id="traceButton" class="trace-button" type="button">留下痕迹</button>
+    </section>
+
+    <section id="stage6" class="stage stage-6" data-stage="6">
+      <button id="backToMemory" class="round-back" type="button" aria-label="返回第三阶段">‹</button>
+      <div class="review-panel glass-card">
+        <textarea id="reviewInput" maxlength="600" placeholder="写下你的书评"></textarea>
+        <button id="sendReview" class="glass-button dark" type="button">送入评论海</button>
+      </div>
+      <div id="commentSea" class="comment-sea" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <audio id="bgm" src="./music/bgm.m4a" preload="auto" loop></audio>
+  <audio id="voice" src="./jyy/jyyvoice.mp3" preload="auto"></audio>
+  <video id="jyyVideo" src="./jyy/jyy.mp4" preload="metadata" playsinline webkit-playsinline disablepictureinpicture></video>
+
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js"></script>
+  <script src="./firebase-config.js"></script>
+  <script src="./script.js"></script>
+</body>
+
+</html>

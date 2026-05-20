@@ -1,0 +1,29 @@
+{
+  "name": "枫海蒹葭",
+  "short_name": "FHJJ",
+  "description": "一个被封存在NFC里的记忆入口",
+  "id": "/fhjj-memory",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "categories": ["entertainment", "books"],
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./images/ap4m.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./images/ap4m.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
