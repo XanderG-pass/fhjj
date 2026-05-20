@@ -11,9 +11,9 @@
     wall: "images/wall.jpg",
     blackLeaf: "images/blackleaf.jpg",
     blackLock: "images/blacklock.jpg",
-    caseImage: "images/ap4m.jpg",
-    podLeft: "images/ap4left.jpg",
-    podRight: "images/ap4right.jpg"
+    caseImage: "images/ap4m.PNG",
+    podLeft: "images/ap4left.PNG",
+    podRight: "images/ap4right.PNG"
   };
 
   const questions = [
@@ -66,6 +66,12 @@
     "走吧\n\n我们去香山",
     "那女孩最后回来了吗\n\n你猜呀"
   ];
+
+  const PIC_COUNT = 14;
+  const MEMO_SPEED_SCALE = 0.25;
+  const MEMO_UNIT = 3.2;
+  const MEMO_TEXT_START = 0.34;
+  const MEMO_TEXT_END = 0.78;
 
   const els = {
     loader: $("loader"),
@@ -121,6 +127,7 @@
   let firebaseDb = null;
   let unsubscribeComments = null;
   const bestImageCache = new Map();
+  const triggeredMoments = new Set();
 
   const resources = buildResourceList();
 
@@ -135,6 +142,7 @@
   init();
 
   async function init() {
+    applyPlatformFallbacks();
     applyImageSources();
     registerServiceWorker();
     bindEvents();
@@ -146,6 +154,13 @@
     showStage(shouldResume ? currentStage : 1);
     if (shouldResume && currentStage === 3) startMemoryScroll();
     if (shouldResume && currentStage === 6) initComments();
+  }
+
+  function applyPlatformFallbacks() {
+    const ua = navigator.userAgent || "";
+    if (/Android|Quark|UCBrowser|HuaweiBrowser|HeyTapBrowser/i.test(ua)) {
+      document.body.classList.add("android-fallback");
+    }
   }
 
   function buildResourceList() {
@@ -211,9 +226,19 @@
   async function applyImageSources() {
     els.blackLeaf.src = await bestImage(imageBase.blackLeaf);
     els.blackLock.src = await bestImage(imageBase.blackLock);
-    els.caseImage.src = await bestImage(imageBase.caseImage);
-    els.podLeft.src = await bestImage(imageBase.podLeft);
-    els.podRight.src = await bestImage(imageBase.podRight);
+    await setAirPodsImage(els.caseImage, imageBase.caseImage);
+    await setAirPodsImage(els.podLeft, imageBase.podLeft);
+    await setAirPodsImage(els.podRight, imageBase.podRight);
+  }
+
+  async function setAirPodsImage(img, src) {
+    img.onerror = () => {
+      if (!img.dataset.rawFallback) {
+        img.dataset.rawFallback = "1";
+        img.src = src;
+      }
+    };
+    img.src = await bestImage(src);
   }
 
   async function preloadEverything() {
@@ -407,7 +432,7 @@
 
   function startMemoryScroll() {
     stopMemoryScroll();
-    targetProgress = clamp(loadState().scrollProgress || 0, 0, memoLines.length + 14);
+    targetProgress = clamp(loadState().scrollProgress || 0, 0, getTotalMemoryProgress());
     easedProgress = targetProgress;
     lastMemoIndex = -1;
     updateMemoryFrame(true);
@@ -446,12 +471,25 @@
   }
 
   function pushMemory(delta) {
-    targetProgress = clamp(targetProgress + delta, 0, 14 + memoLines.length + 0.8);
+    const nextRaw = targetProgress + delta;
+    const crossesIntoMemo = targetProgress < PIC_COUNT && nextRaw > PIC_COUNT;
+    const scaledDelta = targetProgress >= PIC_COUNT
+      ? delta * MEMO_SPEED_SCALE
+      : crossesIntoMemo
+        ? (PIC_COUNT - targetProgress) + ((nextRaw - PIC_COUNT) * MEMO_SPEED_SCALE)
+        : delta;
+    targetProgress = clamp(targetProgress + scaledDelta, 0, getTotalMemoryProgress());
     saveState({ scrollProgress: targetProgress, currentStage: 3 });
   }
 
+  function getTotalMemoryProgress() {
+    return PIC_COUNT + (memoLines.length * MEMO_UNIT) + 0.8;
+  }
+
   function tickMemory() {
-    easedProgress += (targetProgress - easedProgress) * 0.095;
+    if (!interactionLocked) {
+      easedProgress += (targetProgress - easedProgress) * 0.095;
+    }
     updateMemoryFrame(false);
     rafId = requestAnimationFrame(tickMemory);
   }
@@ -463,8 +501,8 @@
     els.scrollWorld.style.setProperty("--py", `${parallaxY}px`);
     els.scrollWorld.style.setProperty("--scale", `${1 + Math.sin(easedProgress) * 0.008}`);
 
-    if (easedProgress < 14) {
-      const picNumber = clamp(14 - Math.floor(easedProgress), 1, 14);
+    if (easedProgress < PIC_COUNT) {
+      const picNumber = clamp(PIC_COUNT - Math.floor(easedProgress), 1, PIC_COUNT);
       const next = activePic ? els.picA : els.picB;
       const prev = activePic ? els.picB : els.picA;
       if (force || currentPicNumber !== picNumber) {
@@ -481,36 +519,107 @@
 
     els.picA.classList.remove("show");
     els.picB.classList.remove("show");
-    const memoProgress = easedProgress - 14;
-    const memoIndex = clamp(Math.floor(memoProgress), 0, memoLines.length - 1);
+    const memoProgress = easedProgress - PIC_COUNT;
+    const memoIndex = clamp(Math.floor(memoProgress / MEMO_UNIT), 0, memoLines.length - 1);
 
     if (memoIndex !== lastMemoIndex || force) {
       lastMemoIndex = memoIndex;
       els.memoImage.src = await bestImage(`memo/memo${memoIndex + 1}.jpg`);
-      els.memoText.textContent = memoLines[memoIndex];
+      els.memoText.textContent = "";
       els.memoText.classList.toggle("cosmic", memoIndex === 24);
     }
 
-    const local = memoProgress - memoIndex;
-    const imageVisible = local < 0.48;
-    const textVisible = local >= 0.24 && local < (memoIndex === 24 ? 0.96 : 0.82);
+    const local = (memoProgress - (memoIndex * MEMO_UNIT)) / MEMO_UNIT;
+    const parts = splitMemoText(memoLines[memoIndex], memoIndex);
+    const frame = getMemoFrame(local, parts.length);
+    const imageVisible = local > 0.03 && local < 0.9;
+    const textVisible = frame.textVisible;
+    if (frame.textIndex > -1 && els.memoText.textContent !== parts[frame.textIndex]) {
+      els.memoText.classList.remove("show", "impact-blur");
+      els.memoText.textContent = parts[frame.textIndex];
+      els.memoText.classList.toggle("cosmic", memoIndex === 24 && frame.textIndex === parts.length - 1);
+    }
     els.memoImage.classList.toggle("show", imageVisible);
     els.memoText.classList.toggle("show", textVisible);
 
-    if (memoIndex === 20 && local > 0.72 && !interactionLocked) {
-      await lockInteraction(1000);
+    if (memoIndex === 20 && frame.textIndex === parts.length - 1 && textVisible && !triggeredMoments.has("impact-20")) {
+      triggeredMoments.add("impact-20");
+      impactMoment();
+      await lockInteraction(1500);
     }
 
-    if (memoIndex === 24 && local > 0.38 && !interactionLocked) {
+    if (memoIndex === 24 && frame.textIndex === parts.length - 1 && textVisible && !triggeredMoments.has("guess-24")) {
+      triggeredMoments.add("guess-24");
       playSpaceNoise();
       await lockInteraction(4000);
     }
 
-    if (targetProgress >= 14 + memoLines.length + 0.28) {
+    if (targetProgress >= getTotalMemoryProgress() - 0.2) {
       stopMemoryScroll();
       saveState({ scrollProgress: targetProgress, currentStage: 4 });
       await wait(900);
       showStage(4);
+    }
+  }
+
+  function splitMemoText(text, memoIndex) {
+    if (memoIndex === 24) {
+      return ["那女孩最后回来了吗", "你猜呢"];
+    }
+    return String(text)
+      .split(/\n\s*\n/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  function getMemoFrame(local, partCount) {
+    if (local < MEMO_TEXT_START || local > MEMO_TEXT_END || partCount === 0) {
+      return { textIndex: -1, textVisible: false };
+    }
+
+    const textProgress = (local - MEMO_TEXT_START) / (MEMO_TEXT_END - MEMO_TEXT_START);
+    const segment = 1 / partCount;
+    const index = clamp(Math.floor(textProgress / segment), 0, partCount - 1);
+    const inside = (textProgress - (index * segment)) / segment;
+    return {
+      textIndex: index,
+      textVisible: inside > 0.12 && inside < 0.84
+    };
+  }
+
+  function impactMoment() {
+    els.scrollWorld.classList.remove("memory-impact");
+    els.memoText.classList.remove("impact-blur");
+    void els.scrollWorld.offsetWidth;
+    els.scrollWorld.classList.add("memory-impact");
+    els.memoText.classList.add("impact-blur");
+    playLowFrequencyImpact();
+    window.setTimeout(() => {
+      els.scrollWorld.classList.remove("memory-impact");
+      els.memoText.classList.remove("impact-blur");
+    }, 520);
+  }
+
+  function playLowFrequencyImpact() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(42, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(28, ctx.currentTime + 0.42);
+      filter.type = "lowpass";
+      filter.frequency.value = 90;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.62);
+      osc.connect(filter).connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.7);
+    } catch {
+      // Impact audio is optional.
     }
   }
 

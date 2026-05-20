@@ -3,6 +3,8 @@
   --glass: rgba(255, 255, 255, 0.48);
   --line: rgba(255, 255, 255, 0.42);
   --ink: #111;
+  --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+  --kaiti-font: "KaiTi", "STKaiti", "Kaiti SC", serif;
 }
 
 * {
@@ -33,7 +35,7 @@ body::-webkit-scrollbar,
 }
 
 body {
-  font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--apple-font);
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
 }
@@ -358,7 +360,7 @@ video {
   position: absolute;
   bottom: calc(13vh + env(safe-area-inset-bottom));
   color: rgba(0, 0, 0, 0.72);
-  font-family: KaiTi, STKaiti, serif;
+  font-family: var(--kaiti-font);
   font-size: 19px;
   letter-spacing: 0.08em;
   animation: quietPulse 4.8s ease-in-out infinite;
@@ -373,7 +375,7 @@ video {
 .begin-memory {
   bottom: auto;
   color: rgba(255, 255, 255, 0);
-  font-family: YouYuan, "Microsoft YaHei UI", sans-serif;
+  font-family: var(--apple-font);
   font-size: clamp(26px, 7vw, 46px);
   text-shadow: 0 0 0 rgba(255, 255, 255, 0);
   pointer-events: none;
@@ -400,14 +402,16 @@ video {
 .flash-image,
 .memo-image {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(84vw, 720px);
-  max-height: 78vh;
-  object-fit: contain;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
   opacity: 0;
   filter: blur(12px);
-  transform: translate(-50%, -50%) scale(1.035);
+  transform: translate3d(0, 0, 0) scale(1.035);
   transition: opacity 0.55s var(--ease), filter 0.75s var(--ease), transform 0.9s var(--ease);
 }
 
@@ -415,12 +419,13 @@ video {
 .memo-image.show {
   opacity: 1;
   filter: blur(0);
-  transform: translate(calc(-50% + var(--px, 0px)), calc(-50% + var(--py, 0px))) scale(var(--scale, 1));
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(var(--scale, 1.02));
 }
 
 .memo-image {
-  width: min(82vw, 650px);
-  max-height: 62vh;
+  width: 100vw;
+  height: 100vh;
+  transition: opacity 1.55s var(--ease), filter 1.7s var(--ease), transform 1.9s var(--ease);
 }
 
 .memo-text {
@@ -429,7 +434,7 @@ video {
   top: 50%;
   width: min(86vw, 820px);
   color: rgba(255, 255, 255, 0.94);
-  font-family: KaiTi, STKaiti, serif;
+  font-family: var(--kaiti-font);
   font-size: clamp(22px, 4.8vw, 40px);
   line-height: 1.75;
   text-align: center;
@@ -439,7 +444,7 @@ video {
   opacity: 0;
   filter: blur(10px);
   transform: translate(-50%, calc(-50% + 22px));
-  transition: opacity 1.2s var(--ease), filter 1.2s var(--ease), transform 1.2s var(--ease);
+  transition: opacity 1.45s var(--ease), filter 1.45s var(--ease), transform 1.45s var(--ease);
 }
 
 .memo-text.show {
@@ -449,12 +454,27 @@ video {
 }
 
 .memo-text.cosmic {
-  font-size: clamp(48px, 14vw, 118px);
+  width: min(80vw, 720px);
+  max-width: 80vw;
+  font-size: clamp(42px, 8vw, 72px);
   text-shadow: 0 0 34px rgba(255, 255, 255, 0.72), 0 0 110px rgba(160, 190, 255, 0.32);
   animation: quietPulse 3.8s ease-in-out infinite;
 }
 
+.scroll-world.memory-impact {
+  animation: memoryImpact 0.52s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.memo-text.impact-blur {
+  filter: blur(3px);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.78), 0 0 90px rgba(255, 255, 255, 0.24);
+  transform: translate(calc(-50% + 5px), calc(-50% - 2px));
+}
+
 .stage-4 {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
   background: #000;
 }
 
@@ -463,33 +483,41 @@ video {
   position: absolute;
   left: 50%;
   top: 48%;
+  display: grid;
+  place-items: center;
   transform: translate(-50%, -50%);
+  z-index: 2;
 }
 
 .product-button {
   width: min(76vw, 430px);
-  filter: drop-shadow(0 34px 55px rgba(255, 255, 255, 0.06));
+  min-height: 180px;
+  filter: none;
 }
 
 .product-button img,
 .pods-pair img {
+  display: block;
+  visibility: visible;
   opacity: 0;
-  filter: blur(18px);
+  filter: none;
   transform: translateY(22px) scale(0.96);
-  transition: opacity 2s var(--ease), filter 2s var(--ease), transform 2s var(--ease);
+  transition: opacity 1.4s var(--ease), transform 1.4s var(--ease);
+  will-change: opacity, transform;
 }
 
 .product-button.show img,
 .pods-pair.show img {
   opacity: 1;
-  filter: blur(0);
+  visibility: visible;
+  filter: none;
   transform: translateY(0) scale(1);
   animation: floatSmall 7.4s ease-in-out infinite;
 }
 
 .case-pickup.hide img {
   opacity: 0;
-  filter: blur(16px);
+  filter: none;
   transform: translateY(-18px) scale(0.97);
 }
 
@@ -498,11 +526,17 @@ video {
   align-items: center;
   justify-content: center;
   gap: min(12vw, 90px);
+  width: min(86vw, 560px);
+  min-height: 220px;
   pointer-events: none;
+  z-index: 3;
 }
 
 .pods-pair img {
   width: min(34vw, 210px);
+  height: auto;
+  min-width: 96px;
+  object-fit: contain;
 }
 
 .pods-pair.show {
@@ -522,9 +556,32 @@ video {
 }
 
 .product-hint {
+  z-index: 4;
   color: rgba(255, 255, 255, 0.78);
-  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--apple-font);
   font-size: 16px;
+}
+
+.android-fallback .stage-4 .product-button,
+.android-fallback .stage-4 .pods-pair {
+  transform: translate(-50%, -50%) translateZ(0);
+}
+
+.android-fallback .stage-4 .product-button img,
+.android-fallback .stage-4 .pods-pair img {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.android-fallback .stage-4 .product-button.show img,
+.android-fallback .stage-4 .pods-pair.show img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) translateZ(0);
 }
 
 #jyyVideo {
@@ -769,6 +826,29 @@ video {
   }
 }
 
+@keyframes memoryImpact {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+  }
+  18% {
+    transform: translate3d(-4px, 2px, 0) scale(1.003);
+    filter: blur(0.6px);
+  }
+  38% {
+    transform: translate3d(3px, -2px, 0) scale(0.999);
+    filter: blur(0.35px);
+  }
+  62% {
+    transform: translate3d(-1px, 1px, 0) scale(1.001);
+    filter: blur(0.15px);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+  }
+}
+
 @keyframes floatBubble {
   0%,
   100% {
@@ -796,10 +876,6 @@ video {
     min-height: 390px;
   }
 
-  .flash-image,
-  .memo-image {
-    width: 92vw;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
