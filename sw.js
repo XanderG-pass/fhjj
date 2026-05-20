@@ -1,4 +1,4 @@
-const VERSION = "fhjj-pwa-v7";
+const VERSION = "fhjj-pwa-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,8 +9,8 @@ const APP_SHELL = [
   "https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js",
   "./images/wall.jpg",
-  "./images/blackleaf.jpg",
-  "./images/blacklock.jpg",
+  "./images/blackleaf.PNG",
+  "./images/blacklock.PNG",
   "./images/ap4m.PNG",
   "./images/ap4left.PNG",
   "./images/ap4right.PNG",

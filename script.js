@@ -9,8 +9,8 @@
   const sessionKey = "fhjj.memory.session.v1";
   const imageBase = {
     wall: "images/wall.jpg",
-    blackLeaf: "images/blackleaf.jpg",
-    blackLock: "images/blacklock.jpg",
+    blackLeaf: "images/blackleaf.PNG",
+    blackLock: "images/blacklock.PNG",
     caseImage: "images/ap4m.PNG",
     podLeft: "images/ap4left.PNG",
     podRight: "images/ap4right.PNG"
@@ -299,8 +299,8 @@
       initComments();
     });
     els.backToMemory.addEventListener("click", () => {
-      showStage(3);
-      startMemoryScroll();
+      stopMemoryScroll();
+      showStage(2);
     });
     els.sendReview.addEventListener("click", submitReview);
   }

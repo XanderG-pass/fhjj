@@ -428,10 +428,14 @@ video {
   transition: opacity 1.55s var(--ease), filter 1.7s var(--ease), transform 1.9s var(--ease);
 }
 
+.memo-image.show {
+  filter: brightness(0.45);
+}
+
 .memo-text {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 62%;
   width: min(86vw, 820px);
   color: rgba(255, 255, 255, 0.94);
   font-family: var(--kaiti-font);
@@ -456,9 +460,15 @@ video {
 .memo-text.cosmic {
   width: min(80vw, 720px);
   max-width: 80vw;
-  font-size: clamp(42px, 8vw, 72px);
-  text-shadow: 0 0 34px rgba(255, 255, 255, 0.72), 0 0 110px rgba(160, 190, 255, 0.32);
-  animation: quietPulse 3.8s ease-in-out infinite;
+  left: 50%;
+  top: 50%;
+  font-size: clamp(36px, 7vw, 56px);
+  text-shadow: 0 0 12px rgba(255,255,255,0.35);
+  animation: none;
+}
+
+.memo-text.cosmic.show {
+  transform: translate(-50%, -50%);
 }
 
 .scroll-world.memory-impact {
