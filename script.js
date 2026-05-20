@@ -68,8 +68,8 @@
   ];
 
   const PIC_COUNT = 14;
-  const MEMO_SPEED_SCALE = 0.25;
-  const MEMO_UNIT = 3.2;
+  const MEMO_SPEED_SCALE = 0.18;
+  const MEMO_UNIT = 4.2;
   const MEMO_TEXT_START = 0.34;
   const MEMO_TEXT_END = 0.78;
 
@@ -488,7 +488,8 @@
 
   function tickMemory() {
     if (!interactionLocked) {
-      easedProgress += (targetProgress - easedProgress) * 0.095;
+      // slower follow for stronger inertia / delayed follow feeling
+      easedProgress += (targetProgress - easedProgress) * 0.055;
     }
     updateMemoryFrame(false);
     rafId = requestAnimationFrame(tickMemory);
@@ -532,8 +533,9 @@
     const local = (memoProgress - (memoIndex * MEMO_UNIT)) / MEMO_UNIT;
     const parts = splitMemoText(memoLines[memoIndex], memoIndex);
     const frame = getMemoFrame(local, parts.length);
-    const imageVisible = local > 0.03 && local < 0.9;
-    const textVisible = frame.textVisible;
+    // ensure image fully disappears before any text becomes visible
+    const imageVisible = local > 0.03 && local < (MEMO_TEXT_START - 0.04);
+    const textVisible = frame.textVisible && !imageVisible;
     if (frame.textIndex > -1 && els.memoText.textContent !== parts[frame.textIndex]) {
       els.memoText.classList.remove("show", "impact-blur");
       els.memoText.textContent = parts[frame.textIndex];
@@ -581,9 +583,10 @@
     const segment = 1 / partCount;
     const index = clamp(Math.floor(textProgress / segment), 0, partCount - 1);
     const inside = (textProgress - (index * segment)) / segment;
+    // tighten the in/out window so text fades in/out more slowly and stays longer
     return {
       textIndex: index,
-      textVisible: inside > 0.12 && inside < 0.84
+      textVisible: inside > 0.18 && inside < 0.82
     };
   }
 
