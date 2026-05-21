@@ -209,7 +209,7 @@
       "jyy/jyy.mp4"
     ];
     for (let i = 1; i <= 14; i += 1) list.push(`pic/pic${i}.jpg`);
-    for (let i = 1; i <= 26; i += 1) list.push(`memo/memo${i}.jpg`);
+    for (let i = 1; i <= 25; i += 1) list.push(`memo/memo${i}.jpg`);
     return list;
   }
 
