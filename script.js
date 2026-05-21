@@ -204,8 +204,6 @@
       "script.js",
       "firebase-config.js",
       "manifest.json",
-      "https://www.gstatic.com/firebasejs/9.17.2/firebase-app-compat.js",
-      "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore-compat.js",
       ...Object.values(imageBase),
       "music/bgm.m4a",
       "jyy/jyy.mp4"
@@ -250,8 +248,15 @@
   function canLoad(path) {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
+      const timeout = setTimeout(() => resolve(false), 5000);
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve(false);
+      };
       img.src = path;
     });
   }
