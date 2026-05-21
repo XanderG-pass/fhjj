@@ -15,7 +15,6 @@ const APP_SHELL = [
   "./images/ap4left.PNG",
   "./images/ap4right.PNG",
   "./music/bgm.m4a",
-  "./jyy/jyyvoice.mp3",
   "./jyy/jyy.mp4"
 ];
 
