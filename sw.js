@@ -60,11 +60,25 @@ self.addEventListener("fetch", (event) => {
 async function cacheAllSettled(urls) {
   const cache = await caches.open(VERSION);
   await Promise.allSettled(Array.from(new Set(urls)).map(async (url) => {
-    const request = /^https?:\/\//i.test(url)
-      ? new Request(url, { mode: "no-cors", cache: "reload" })
-      : new Request(url, { cache: "reload" });
-    const response = await fetch(request);
-    if (response.ok || response.type === "opaque") await cache.put(request, response);
+    try {
+      // skip non-http(s) or extension schemes
+      if (/^([a-zA-Z0-9+.-]+:)?\/\//.test(url) && !/^https?:\/\//i.test(url)) return;
+      const request = /^https?:\/\//i.test(url)
+        ? new Request(url, { mode: "no-cors", cache: "reload" })
+        : new Request(url, { cache: "reload" });
+      const response = await fetch(request).catch(() => undefined);
+      if (!response) return;
+      if (response.ok || response.type === "opaque") {
+        try {
+          await cache.put(request, response);
+        } catch (e) {
+          // some schemes (chrome-extension://) or opaque responses may fail to cache
+          // ignore these errors to avoid breaking installation
+        }
+      }
+    } catch (e) {
+      // ignore per-url errors
+    }
   }));
 }
 
@@ -78,9 +92,16 @@ async function cacheFirst(request) {
   if (cached) return cached;
   try {
     const response = await fetch(request);
-    if (response.ok || response.type === "opaque") {
-      const cache = await caches.open(VERSION);
-      cache.put(request, response.clone());
+    if (response && (response.ok || response.type === "opaque")) {
+      try {
+        // only attempt to cache http(s) requests (or opaque responses)
+        if (response.type === "opaque" || /^https?:\/\//i.test(request.url)) {
+          const cache = await caches.open(VERSION);
+          await cache.put(request, response.clone());
+        }
+      } catch (e) {
+        // ignore cache.put errors
+      }
     }
     return response;
   } catch {

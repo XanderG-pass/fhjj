@@ -435,7 +435,7 @@ video {
 .memo-text {
   position: absolute;
   left: 50%;
-  top: 62%;
+  top: 50%;
   width: min(86vw, 820px);
   color: rgba(255, 255, 255, 0.94);
   font-family: var(--kaiti-font);
@@ -453,6 +453,7 @@ video {
 }
 
 .memo-text.show {
+  top: 50%;
   opacity: 1;
   filter: blur(0);
   transform: translate(-50%, -50%);
@@ -469,6 +470,7 @@ video {
 }
 
 .memo-text.cosmic.show {
+  top: 50%;
   transform: translate(-50%, -50%);
 }
 

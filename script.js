@@ -19,18 +19,18 @@
   const questions = [
     {
       text: "江云雁2020年跃迁时的工服是什么颜色？",
-      options: ["白色", "黑色", "绿色", "我不知道"],
+      options: ["白色", "黑色", "绿色", "都不对"],
       answer: "绿色"
     },
     {
       text: "何愉辉二人第一次在江云雁餐厅点的什么食物？",
-      options: ["卤肉面", "肉酱披萨", "兰州拉面", "我不知道"],
+      options: ["卤肉面", "肉酱披萨", "兰州拉面", "都不对"],
       answer: "肉酱披萨"
     },
     {
       text: "江云雁的笔记本电脑是什么品牌？",
-      options: ["微软", "华为", "苹果", "我不知道"],
-      answer: "苹果"
+      options: ["微软", "华为", "小米", "都不对"],
+      answer: "都不对"
     },
     {
       text: "江云雁喜欢的歌手？",
@@ -53,15 +53,15 @@
     "“明天...就在家吧。”\n\n“我想多看看你...”",
     "“就这样看着他，安安静静的，真好...”\n\n“他应该快醒了，就写到这吧。”",
     "“你是个天才！孩子，你的运算完全正确！”\n\n“操！！！”",
-    "“你是不是要走\n\n嗯\n\n他妈的高深呢！”\n\n“他没有错”",
+    "“你是不是要走”\n\n“嗯”\n\n“他妈的高深呢！”\n\n“他没有错”",
     "“你...是不是...放东西了...”\n\n“睡吧。”",
     "“你可以叫我一声...宝贝吗？”\n\n“...宝贝。”",
     "“这家热干面...她很喜欢吃。”\n\n“操你妈！”",
     "“现在是几几年？”\n\n“你板住头了学生？”",
     "“oi.”\n\n“哪天我要是猝死在这里了，记得帮我清理浏览记录。”\n\n“高深，你...哈哈，你长白头发了！”\n\n“小子，你比我多两根！”",
     "“过得好快啊...”\n\n“是啊，好快啊...”",
-    "“祝你好运，我的兄弟。”\n\n“咚！！！！！”,
-    "“文字...时间之河...”\n\n“传给...想看的人！！！”,
+    "“祝你好运，我的兄弟。”\n\n“咚！！！！！”",
+    "“文字...时间之河...”\n\n“传给...想看的人！！！”",
     "“是他！”\n\n“真的是他！”",
     "“走吧...”\n\n“我们去香山。”",
     "“那女孩最后回来了吗？”\n\n“你猜呀”"
@@ -131,6 +131,30 @@
 
   const resources = buildResourceList();
 
+  // Global error reporting to surface initialization or runtime errors
+  window.addEventListener("error", (ev) => {
+    try {
+      const loader = document.getElementById("loader");
+      if (loader) loader.querySelector(".loader-panel p").textContent = `加载失败: ${ev.message || ev.error || ev.filename || "未知错误"}`;
+    } catch (e) {
+      // swallow
+    }
+    // still log to console
+    // eslint-disable-next-line no-console
+    console.error(ev.error || ev.message || ev);
+  });
+
+  window.addEventListener("unhandledrejection", (ev) => {
+    try {
+      const loader = document.getElementById("loader");
+      if (loader) loader.querySelector(".loader-panel p").textContent = `加载失败: ${ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason)}`;
+    } catch (e) {
+      // swallow
+    }
+    // eslint-disable-next-line no-console
+    console.error("Unhandled promise rejection:", ev.reason);
+  });
+
   document.addEventListener("contextmenu", (event) => {
     if (event.target.closest("img, video")) event.preventDefault();
   });
@@ -139,7 +163,17 @@
     saveState({ scrollProgress: targetProgress, currentStage });
   });
 
-  init();
+  // start initialization and surface any errors to the loader UI so user isn't stuck
+  init().catch((err) => {
+    try {
+      const loader = document.getElementById("loader");
+      if (loader) loader.querySelector(".loader-panel p").textContent = `加载失败: ${err && err.message ? err.message : String(err)}`;
+    } catch (e) {
+      // swallow
+    }
+    // eslint-disable-next-line no-console
+    console.error("Initialization error:", err);
+  });
 
   async function init() {
     applyPlatformFallbacks();
@@ -278,7 +312,16 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("./sw.js").catch(() => undefined);
+    navigator.serviceWorker.register("./sw.js").catch((err) => {
+      try {
+        const loader = document.getElementById("loader");
+        if (loader) loader.querySelector(".loader-panel p").textContent = `ServiceWorker 注册失败: ${err && err.message ? err.message : String(err)}`;
+      } catch (e) {
+        // swallow
+      }
+      // eslint-disable-next-line no-console
+      console.error("ServiceWorker register error:", err);
+    });
   }
 
   function bindEvents() {
@@ -415,6 +458,8 @@
   }
 
   async function enterStage3() {
+    // Reset scroll progress to beginning of memory for new playthrough
+    saveState({ scrollProgress: 0 });
     await fadeInBgm();
     showStage(3);
     startMemoryScroll();
