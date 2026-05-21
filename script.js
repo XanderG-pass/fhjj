@@ -181,10 +181,15 @@
     registerServiceWorker();
     bindEvents();
     initSession();
+    console.log("starting preloadEverything");
     await preloadEverything();
+    console.log("preloadEverything finished");
+    console.log("hide loading");
     els.loader.classList.add("is-hidden");
 
     const shouldResume = store.quizDone && store.nickname && currentStage > 1;
+    console.log("shouldResume:", shouldResume, "currentStage:", currentStage, "store:", store);
+    console.log("show stage ->", shouldResume ? currentStage : 1);
     showStage(shouldResume ? currentStage : 1);
     if (shouldResume && currentStage === 3) startMemoryScroll();
     if (shouldResume && currentStage === 6) initComments();
@@ -215,14 +220,17 @@
 
   function loadState() {
     try {
+      console.log("loadState: reading from localStorage", stateKey);
       return JSON.parse(localStorage.getItem(stateKey)) || {};
     } catch {
+      console.log("loadState: parse error");
       return {};
     }
   }
 
   function saveState(next) {
     const merged = { ...loadState(), ...next };
+    console.log("saveState: saving", merged);
     localStorage.setItem(stateKey, JSON.stringify(merged));
     sessionStorage.setItem(sessionKey, JSON.stringify({
       currentStage: merged.currentStage,
@@ -232,33 +240,20 @@
   }
 
   function initSession() {
+    console.log("initSession: store before init", store);
     if (!store.uuid) {
-      saveState({ uuid: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}` });
+      const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      console.log("initSession: creating uuid", id);
+      saveState({ uuid: id });
     }
+    console.log("initSession: done, store now", loadState());
   }
 
   async function bestImage(path) {
+    // Simplified: no auto-webp fallback — use the provided path directly
     if (bestImageCache.has(path)) return bestImageCache.get(path);
-    const webp = path.replace(/\.(jpg|jpeg|png)$/i, ".webp");
-    const resolved = await canLoad(webp) ? webp : path;
-    bestImageCache.set(path, resolved);
-    return resolved;
-  }
-
-  function canLoad(path) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const timeout = setTimeout(() => resolve(false), 5000);
-      img.onload = () => {
-        clearTimeout(timeout);
-        resolve(true);
-      };
-      img.onerror = () => {
-        clearTimeout(timeout);
-        resolve(false);
-      };
-      img.src = path;
-    });
+    bestImageCache.set(path, path);
+    return path;
   }
 
   async function applyImageSources() {
@@ -280,6 +275,7 @@
   }
 
   async function preloadEverything() {
+    console.log("preload started, total resources:", resources.length);
     await notifyServiceWorker();
     const tasks = resources.map((resource) => {
       if (/\.(jpg|jpeg|png|webp)$/i.test(resource)) return preloadImage(resource);
@@ -287,21 +283,30 @@
       return warmFetch(resource);
     });
     await Promise.allSettled(tasks);
+    console.log("preload completed");
   }
 
   async function preloadImage(resource) {
+    console.log("loading:", resource);
     const src = await bestImage(resource);
     return new Promise((resolve) => {
       const img = new Image();
       img.decoding = "async";
       img.loading = "eager";
-      img.onload = resolve;
-      img.onerror = resolve;
+      img.onload = () => {
+        console.log("success:", resource);
+        resolve();
+      };
+      img.onerror = (err) => {
+        console.log("failed:", resource, err);
+        resolve();
+      };
       img.src = src;
     });
   }
 
   function warmFetch(resource) {
+    console.log("loading:", resource);
     return new Promise((resolve) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
@@ -311,10 +316,12 @@
       fetch(resource, options)
         .then(() => {
           clearTimeout(timeout);
+          console.log("success:", resource);
           resolve();
         })
-        .catch(() => {
+        .catch((err) => {
           clearTimeout(timeout);
+          console.log("failed:", resource, err);
           resolve();
         });
     });
@@ -330,6 +337,7 @@
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("./sw.js").catch((err) => {
+      console.log("registerServiceWorker: registration failed", err && err.message ? err.message : err);
       try {
         const loader = document.getElementById("loader");
         if (loader) loader.querySelector(".loader-panel p").textContent = `ServiceWorker 注册失败: ${err && err.message ? err.message : String(err)}`;
@@ -834,7 +842,9 @@
       messagingSenderId: "",
       appId: ""
     };
+    console.log("createFirestore: config present?", !!window.FHJJ_FIREBASE_CONFIG, config);
     if (!window.firebase || !config.apiKey) return null;
+    console.log("createFirestore: initializing firebase");
     if (!firebase.apps.length) firebase.initializeApp(config);
     return firebase.firestore();
   }
