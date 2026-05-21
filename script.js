@@ -177,7 +177,7 @@
 
   async function init() {
     applyPlatformFallbacks();
-    applyImageSources();
+    await applyImageSources();
     registerServiceWorker();
     bindEvents();
     initSession();
@@ -302,10 +302,22 @@
   }
 
   function warmFetch(resource) {
-    const options = /^https?:\/\//i.test(resource)
-      ? { cache: "force-cache", mode: "no-cors" }
-      : { cache: "force-cache" };
-    return fetch(resource, options).catch(() => undefined);
+    return new Promise((resolve) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const options = /^https?:\/\//i.test(resource)
+        ? { cache: "force-cache", mode: "no-cors", signal: controller.signal }
+        : { cache: "force-cache", signal: controller.signal };
+      fetch(resource, options)
+        .then(() => {
+          clearTimeout(timeout);
+          resolve();
+        })
+        .catch(() => {
+          clearTimeout(timeout);
+          resolve();
+        });
+    });
   }
 
   async function notifyServiceWorker() {
