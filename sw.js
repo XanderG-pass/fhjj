@@ -1,4 +1,4 @@
-const VERSION = "fhjj-pwa-v9";
+const VERSION = "fhjj-pwa-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -19,7 +19,7 @@ const APP_SHELL = [
 ];
 
 for (let i = 1; i <= 14; i += 1) APP_SHELL.push(`./pic/pic${i}.jpg`);
-for (let i = 1; i <= 26; i += 1) APP_SHELL.push(`./memo/memo${i}.jpg`);
+for (let i = 1; i <= 25; i += 1) APP_SHELL.push(`./memo/memo${i}.jpg`);
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

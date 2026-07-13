@@ -76,6 +76,7 @@
   const els = {
     loader: $("loader"),
     stages: Array.from(document.querySelectorAll(".stage")),
+    enterArchive: $("enterArchive"),
     quizPanel: $("quizPanel"),
     verifyCard: $("verifyCard"),
     rejectText: $("rejectText"),
@@ -112,7 +113,7 @@
   };
 
   const store = loadState();
-  let currentStage = store.currentStage || 1;
+  let currentStage = Number.isFinite(store.currentStage) ? store.currentStage : 0;
   let quizIndex = 0;
   let quizCorrect = 0;
   let phase2Locked = false;
@@ -124,6 +125,8 @@
   let easedProgress = targetProgress;
   let lastMemoIndex = -1;
   let interactionLocked = false;
+  let dampedFocusKey = "";
+  let dampedFocusUntil = 0;
   let firebaseDb = null;
   let unsubscribeComments = null;
   const bestImageCache = new Map();
@@ -189,8 +192,8 @@
 
     const shouldResume = store.quizDone && store.nickname && currentStage > 1;
     console.log("shouldResume:", shouldResume, "currentStage:", currentStage, "store:", store);
-    console.log("show stage ->", shouldResume ? currentStage : 1);
-    showStage(shouldResume ? currentStage : 1);
+    console.log("show stage ->", shouldResume ? currentStage : 0);
+    showStage(shouldResume ? currentStage : 0);
     if (shouldResume && currentStage === 3) startMemoryScroll();
     if (shouldResume && currentStage === 6) initComments();
   }
@@ -254,6 +257,25 @@
     if (bestImageCache.has(path)) return bestImageCache.get(path);
     bestImageCache.set(path, path);
     return path;
+  }
+
+  function revealImage(element, src, mode = "memo") {
+    if (element.dataset.src === src && element.classList.contains("show")) return;
+    element.dataset.src = src;
+    element.classList.remove("frame-enter", "memo-enter");
+    element.src = src;
+    element.classList.add("show", mode === "flash" ? "frame-enter" : "memo-enter");
+    window.setTimeout(() => {
+      element.classList.remove("frame-enter", "memo-enter");
+    }, mode === "flash" ? 1200 : 1700);
+  }
+
+  function releaseImage(element) {
+    if (!element.classList.contains("show")) return;
+    element.classList.remove("frame-enter", "memo-enter");
+    element.classList.add("frame-leave");
+    element.classList.remove("show");
+    window.setTimeout(() => element.classList.remove("frame-leave"), 900);
   }
 
   async function applyImageSources() {
@@ -350,7 +372,11 @@
   }
 
   function bindEvents() {
-    els.homeButton.addEventListener("click", resetQuiz);
+    els.enterArchive.addEventListener("click", () => showStage(1));
+    els.homeButton.addEventListener("click", () => {
+      resetQuiz();
+      showStage(0);
+    });
     els.nicknameSubmit.addEventListener("click", submitName);
     els.nicknameInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") submitName();
@@ -504,6 +530,8 @@
     targetProgress = clamp(loadState().scrollProgress || 0, 0, getTotalMemoryProgress());
     easedProgress = targetProgress;
     lastMemoIndex = -1;
+    dampedFocusKey = "";
+    dampedFocusUntil = 0;
     updateMemoryFrame(true);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: false });
@@ -542,13 +570,46 @@
   function pushMemory(delta) {
     const nextRaw = targetProgress + delta;
     const crossesIntoMemo = targetProgress < PIC_COUNT && nextRaw > PIC_COUNT;
+    const speedScale = targetProgress >= PIC_COUNT ? MEMO_SPEED_SCALE * getReadingDamping(delta) : 1;
     const scaledDelta = targetProgress >= PIC_COUNT
-      ? delta * MEMO_SPEED_SCALE
+      ? delta * speedScale
       : crossesIntoMemo
         ? (PIC_COUNT - targetProgress) + ((nextRaw - PIC_COUNT) * MEMO_SPEED_SCALE)
         : delta;
     targetProgress = clamp(targetProgress + scaledDelta, 0, getTotalMemoryProgress());
     saveState({ scrollProgress: targetProgress, currentStage: 3 });
+  }
+
+  function getReadingDamping(delta) {
+    const projectedProgress = targetProgress + (delta * MEMO_SPEED_SCALE);
+    const focus = getReadableFocus(targetProgress) || getReadableFocus(projectedProgress);
+    const now = performance.now();
+    if (!focus) return 1;
+    if (focus.key !== dampedFocusKey || now > dampedFocusUntil) {
+      dampedFocusKey = focus.key;
+      dampedFocusUntil = now + (focus.type === "image" ? 2300 : 2000);
+    }
+    const remaining = dampedFocusUntil - now;
+    if (remaining <= 0) return 1;
+    const duration = focus.type === "image" ? 2300 : 2000;
+    const minimum = focus.type === "image" ? 0.025 : 0.065;
+    return minimum + (1 - minimum) * (1 - (remaining / duration));
+  }
+
+  function getReadableFocus(progress) {
+    if (progress < PIC_COUNT) return null;
+    const memoProgress = progress - PIC_COUNT;
+    const memoIndex = clamp(Math.floor(memoProgress / MEMO_UNIT), 0, memoLines.length - 1);
+    const local = (memoProgress - (memoIndex * MEMO_UNIT)) / MEMO_UNIT;
+    if (local > 0.02 && local < (MEMO_TEXT_START + 0.03)) {
+      return { key: `memo-${memoIndex}-image`, type: "image" };
+    }
+    if (local >= (MEMO_TEXT_START - 0.04) && local <= (MEMO_TEXT_END + 0.04)) {
+      const parts = splitMemoText(memoLines[memoIndex], memoIndex);
+      const frame = getMemoFrame(local, parts.length);
+      if (frame.textIndex > -1) return { key: `memo-${memoIndex}-text-${frame.textIndex}`, type: "text" };
+    }
+    return null;
   }
 
   function getTotalMemoryProgress() {
@@ -576,25 +637,24 @@
       const next = activePic ? els.picA : els.picB;
       const prev = activePic ? els.picB : els.picA;
       if (force || currentPicNumber !== picNumber) {
-        next.src = await bestImage(`pic/pic${picNumber}.jpg`);
-        next.classList.add("show");
-        prev.classList.remove("show");
+        revealImage(next, await bestImage(`pic/pic${picNumber}.jpg`), "flash");
+        releaseImage(prev);
         activePic = activePic ? 0 : 1;
         currentPicNumber = picNumber;
       }
-      els.memoImage.classList.remove("show");
+      releaseImage(els.memoImage);
       els.memoText.classList.remove("show", "cosmic");
       return;
     }
 
-    els.picA.classList.remove("show");
-    els.picB.classList.remove("show");
+    releaseImage(els.picA);
+    releaseImage(els.picB);
     const memoProgress = easedProgress - PIC_COUNT;
     const memoIndex = clamp(Math.floor(memoProgress / MEMO_UNIT), 0, memoLines.length - 1);
 
     if (memoIndex !== lastMemoIndex || force) {
       lastMemoIndex = memoIndex;
-      els.memoImage.src = await bestImage(`memo/memo${memoIndex + 1}.jpg`);
+      revealImage(els.memoImage, await bestImage(`memo/memo${memoIndex + 1}.jpg`), "memo");
       els.memoText.textContent = "";
       els.memoText.classList.toggle("cosmic", memoIndex === 24);
     }
@@ -603,14 +663,18 @@
     const parts = splitMemoText(memoLines[memoIndex], memoIndex);
     const frame = getMemoFrame(local, parts.length);
     // ensure image fully disappears before any text becomes visible
-    const imageVisible = local > 0.03 && local < (MEMO_TEXT_START - 0.04);
+    const imageVisible = local > 0.03 && local < (MEMO_TEXT_START + 0.02);
     const textVisible = frame.textVisible && !imageVisible;
     if (frame.textIndex > -1 && els.memoText.textContent !== parts[frame.textIndex]) {
       els.memoText.classList.remove("show", "impact-blur");
       els.memoText.textContent = parts[frame.textIndex];
       els.memoText.classList.toggle("cosmic", memoIndex === 24 && frame.textIndex === parts.length - 1);
     }
-    els.memoImage.classList.toggle("show", imageVisible);
+    if (imageVisible) {
+      els.memoImage.classList.add("show");
+    } else {
+      releaseImage(els.memoImage);
+    }
     els.memoText.classList.toggle("show", textVisible);
 
     if (memoIndex === 20 && frame.textIndex === parts.length - 1 && textVisible && !triggeredMoments.has("impact-20")) {

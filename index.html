@@ -12,6 +12,7 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="一个被封存在NFC里的记忆入口" />
   <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./images/ap4m.PNG" type="image/png" />
   <link rel="apple-touch-icon" href="./images/ap4m.PNG" />
   <link rel="preload" href="./images/wall.jpg" as="image" />
   <!-- preload for bgm removed (some browsers warn about unsupported as value) -->
@@ -28,6 +29,23 @@
   </div>
 
   <main id="app" class="app" aria-label="枫海蒹葭记忆入口">
+    <section id="stage0" class="stage stage-0" data-stage="0">
+      <div class="nfc-wall" aria-hidden="true">
+        <div class="nfc-page"></div>
+        <div class="nfc-leaf"></div>
+        <div class="nfc-ring"></div>
+        <div class="nfc-scan"></div>
+      </div>
+      <div class="home-copy">
+        <p class="home-kicker">NFC memory unlocked</p>
+        <h1>枫海蒹葭</h1>
+        <p>这不是桥，是一张从时间之外递来的纸条。</p>
+      </div>
+      <button id="enterArchive" class="enter-archive" type="button">
+        <span>打开记忆</span>
+      </button>
+    </section>
+
     <section id="stage1" class="stage stage-1" data-stage="1">
       <div class="wallpaper" aria-hidden="true"></div>
       <div id="verifyCard" class="glass-card verify-card">
