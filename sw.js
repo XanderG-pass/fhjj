@@ -1,4 +1,4 @@
-const VERSION = "fhjj-pwa-v10";
+const VERSION = "fhjj-pwa-v11";
 const APP_SHELL = [
   "./",
   "./index.html",

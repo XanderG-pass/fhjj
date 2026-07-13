@@ -125,8 +125,6 @@
   let easedProgress = targetProgress;
   let lastMemoIndex = -1;
   let interactionLocked = false;
-  let dampedFocusKey = "";
-  let dampedFocusUntil = 0;
   let firebaseDb = null;
   let unsubscribeComments = null;
   const bestImageCache = new Map();
@@ -372,7 +370,11 @@
   }
 
   function bindEvents() {
-    els.enterArchive.addEventListener("click", () => showStage(1));
+    els.enterArchive.addEventListener("click", () => {
+      playUnlockClick();
+      vibrate([12, 24, 8]);
+      showStage(1);
+    });
     els.homeButton.addEventListener("click", () => {
       resetQuiz();
       showStage(0);
@@ -388,6 +390,7 @@
     els.wearPods.addEventListener("click", wearPods);
     els.video.addEventListener("ended", enterStage5);
     els.traceButton.addEventListener("click", () => {
+      vibrate([14, 34, 10, 58, 8]);
       showStage(6);
       initComments();
     });
@@ -530,8 +533,6 @@
     targetProgress = clamp(loadState().scrollProgress || 0, 0, getTotalMemoryProgress());
     easedProgress = targetProgress;
     lastMemoIndex = -1;
-    dampedFocusKey = "";
-    dampedFocusUntil = 0;
     updateMemoryFrame(true);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: false });
@@ -570,46 +571,13 @@
   function pushMemory(delta) {
     const nextRaw = targetProgress + delta;
     const crossesIntoMemo = targetProgress < PIC_COUNT && nextRaw > PIC_COUNT;
-    const speedScale = targetProgress >= PIC_COUNT ? MEMO_SPEED_SCALE * getReadingDamping(delta) : 1;
     const scaledDelta = targetProgress >= PIC_COUNT
-      ? delta * speedScale
+      ? delta * MEMO_SPEED_SCALE
       : crossesIntoMemo
         ? (PIC_COUNT - targetProgress) + ((nextRaw - PIC_COUNT) * MEMO_SPEED_SCALE)
         : delta;
     targetProgress = clamp(targetProgress + scaledDelta, 0, getTotalMemoryProgress());
     saveState({ scrollProgress: targetProgress, currentStage: 3 });
-  }
-
-  function getReadingDamping(delta) {
-    const projectedProgress = targetProgress + (delta * MEMO_SPEED_SCALE);
-    const focus = getReadableFocus(targetProgress) || getReadableFocus(projectedProgress);
-    const now = performance.now();
-    if (!focus) return 1;
-    if (focus.key !== dampedFocusKey || now > dampedFocusUntil) {
-      dampedFocusKey = focus.key;
-      dampedFocusUntil = now + (focus.type === "image" ? 2300 : 2000);
-    }
-    const remaining = dampedFocusUntil - now;
-    if (remaining <= 0) return 1;
-    const duration = focus.type === "image" ? 2300 : 2000;
-    const minimum = focus.type === "image" ? 0.025 : 0.065;
-    return minimum + (1 - minimum) * (1 - (remaining / duration));
-  }
-
-  function getReadableFocus(progress) {
-    if (progress < PIC_COUNT) return null;
-    const memoProgress = progress - PIC_COUNT;
-    const memoIndex = clamp(Math.floor(memoProgress / MEMO_UNIT), 0, memoLines.length - 1);
-    const local = (memoProgress - (memoIndex * MEMO_UNIT)) / MEMO_UNIT;
-    if (local > 0.02 && local < (MEMO_TEXT_START + 0.03)) {
-      return { key: `memo-${memoIndex}-image`, type: "image" };
-    }
-    if (local >= (MEMO_TEXT_START - 0.04) && local <= (MEMO_TEXT_END + 0.04)) {
-      const parts = splitMemoText(memoLines[memoIndex], memoIndex);
-      const frame = getMemoFrame(local, parts.length);
-      if (frame.textIndex > -1) return { key: `memo-${memoIndex}-text-${frame.textIndex}`, type: "text" };
-    }
-    return null;
   }
 
   function getTotalMemoryProgress() {
@@ -730,6 +698,7 @@
     els.scrollWorld.classList.add("memory-impact");
     els.memoText.classList.add("impact-blur");
     playLowFrequencyImpact();
+    vibrate([90, 45, 180, 40, 120]);
     window.setTimeout(() => {
       els.scrollWorld.classList.remove("memory-impact");
       els.memoText.classList.remove("impact-blur");
@@ -756,6 +725,51 @@
       osc.stop(ctx.currentTime + 0.7);
     } catch {
       // Impact audio is optional.
+    }
+  }
+
+  function vibrate(pattern) {
+    if (typeof navigator.vibrate !== "function") return false;
+    try {
+      return navigator.vibrate(pattern);
+    } catch {
+      return false;
+    }
+  }
+
+  function stopVibration() {
+    vibrate(0);
+  }
+
+  function playUnlockClick() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const length = Math.floor(ctx.sampleRate * 0.075);
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i += 1) {
+        const decay = 1 - (i / length);
+        data[i] = (Math.random() * 2 - 1) * decay * decay;
+      }
+      const source = ctx.createBufferSource();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      source.buffer = buffer;
+      filter.type = "bandpass";
+      filter.frequency.value = 1700;
+      filter.Q.value = 0.8;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.075);
+      source.connect(filter).connect(gain).connect(ctx.destination);
+      ctx.resume().catch(() => undefined);
+      source.start();
+      source.stop(ctx.currentTime + 0.08);
+      window.setTimeout(() => ctx.close().catch(() => undefined), 180);
+    } catch {
+      // Haptic and audio feedback are optional browser capabilities.
     }
   }
 
@@ -803,9 +817,11 @@
   async function pickupCase() {
     if (phase4Step !== 0) return;
     phase4Step = 1;
+    vibrate([10, 150, 8, 150, 8, 150, 8, 150, 8]);
     els.casePickup.classList.add("hide");
     els.wearPods.classList.add("hidden");
     await wait(1300);
+    stopVibration();
     els.casePickup.classList.remove("show");
     els.podsPair.classList.add("show");
     els.wearPods.textContent = "点击戴上";
