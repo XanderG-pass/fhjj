@@ -1,29 +1,24 @@
 {
-  "name": "枫海蒹葭",
-  "short_name": "FHJJ",
-  "description": "一个被封存在NFC里的记忆入口",
-  "id": "/fhjj-memory",
+  "name": "枫海蒹葭 · 时间之外",
+  "short_name": "枫海蒹葭",
+  "description": "一张时间之外的纸条",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen", "minimal-ui"],
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "orientation": "portrait",
-  "categories": ["entertainment", "books"],
+  "background_color": "#eef1ef",
+  "theme_color": "#eef1ef",
+  "categories": [
+    "entertainment",
+    "books"
+  ],
   "lang": "zh-CN",
   "icons": [
     {
-      "src": "./images/ap4m.PNG",
-      "sizes": "192x192",
+      "src": "./images/blackleaf.PNG",
+      "sizes": "1004x1101",
       "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./images/ap4m.PNG",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
